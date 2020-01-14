@@ -230,10 +230,14 @@ bool Doxygen::documentEntity(const DoxygenSettingsStruct& DoxySettings, Core::IE
         indent.chop(1);
 
     if (lastSymbol->isClass()) {
-        docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        if (!DoxySettings.DoxyComment.doxBegin.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        }
         if (DoxySettings.printBrief) {
             docToWrite += indent + DoxySettings.DoxyComment.doxBrief;
-            docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+            if (DoxySettings.emptyLineAfterBrief) {
+                docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+            }
         }
         if (DoxySettings.verbosePrinting) {
             QString projectRoot = getProjectRoot();
@@ -242,24 +246,41 @@ bool Doxygen::documentEntity(const DoxygenSettingsStruct& DoxySettings, Core::IE
             QString fileNameProj = fileNameStr.remove(projectRoot);
             docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "class " + overview.prettyName(name) + " " + fileName + " \"" + fileNameProj + "\"\n";
         }
-        docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+        if (!DoxySettings.DoxyComment.doxEnding.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+        }
     } else if (lastSymbol->isTypedef()) {
-        docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        if (!DoxySettings.DoxyComment.doxBegin.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        }
         if (DoxySettings.printBrief) {
             docToWrite += indent + DoxySettings.DoxyComment.doxBrief;
+            if (DoxySettings.emptyLineAfterBrief) {
+                docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+            }
+        }
+        if (DoxySettings.verbosePrinting) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "typedef " + overview.prettyName(name);
+        }
+        if (!DoxySettings.DoxyComment.doxEnding.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+        }
+    } else if (lastSymbol->isEnum()) {
+        if (!DoxySettings.DoxyComment.doxBegin.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        }
+        if (DoxySettings.printBrief) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxBrief;
+        }
+        if (DoxySettings.emptyLineAfterBrief) {
             docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
         }
-        if (DoxySettings.verbosePrinting)
-            docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "typedef " + overview.prettyName(name);
-        docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
-    } else if (lastSymbol->isEnum()) {
-        docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
-        if (DoxySettings.printBrief)
-            docToWrite += indent + DoxySettings.DoxyComment.doxBrief;
-        docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
-        if (DoxySettings.verbosePrinting)
+        if (DoxySettings.verbosePrinting) {
             docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "enum " + overview.prettyName(name) + "\n";
-        docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+        }
+        if (!DoxySettings.DoxyComment.doxEnding.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+        }
     }
     // Here comes the bitch.
     else if (lastSymbol->isDeclaration() || lastSymbol->isFunction()) {
@@ -270,22 +291,33 @@ bool Doxygen::documentEntity(const DoxygenSettingsStruct& DoxySettings, Core::IE
         overview.showFunctionSignatures = true;
 
         QString arglist = overview.prettyType(lastSymbol->type(), name);
-        docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        if (!DoxySettings.DoxyComment.doxBegin.isEmpty()) {
+            docToWrite += indent + DoxySettings.DoxyComment.doxBegin;
+        }
         if (DoxySettings.printBrief) {
             docToWrite += indent + DoxySettings.DoxyComment.doxBrief;
-            docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+            if (DoxySettings.emptyLineAfterBrief) {
+                docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+            }
         }
 
         // if variable, do it quickly...
         if (!arglist.contains('(')) {
             if (DoxySettings.shortVarDoc) {
                 printAtEnd = true;
-                docToWrite = DoxySettings.DoxyComment.doxShortVarDoc + "TODO: describe" + DoxySettings.DoxyComment.doxShortVarDocEnd;
+                docToWrite = DoxySettings.DoxyComment.doxShortVarDoc + DoxySettings.DoxyComment.doxShortVarDocEnd;
             } else {
-                if (DoxySettings.verbosePrinting)
-                    docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "var " + overview.prettyName(name) + "\n" + indent + DoxySettings.DoxyComment.doxEnding;
-                else
-                    docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine + indent + DoxySettings.DoxyComment.doxEnding;
+                if (DoxySettings.verbosePrinting) {
+                    docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "var " + overview.prettyName(name) + "\n";
+                }
+                else {
+                  if (DoxySettings.emptyLineAfterBrief) {
+                      docToWrite += indent + DoxySettings.DoxyComment.doxEmptyLine;
+                  }
+                }
+                if (!DoxySettings.DoxyComment.doxEnding.isEmpty()) {
+                    docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+                }
             }
         } else {
             // Never noticed it before, a useless comment block because of the Q_OBJECT macro
@@ -307,7 +339,7 @@ bool Doxygen::documentEntity(const DoxygenSettingsStruct& DoxySettings, Core::IE
                 singleArg.remove(QRegExp("\\s*=.*")); // FIXME probably don't need the * after \\s but...
                 singleArg.replace("*", "");
                 singleArg.replace("&", "");
-                docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "param " + singleArg.section(' ', -1) + "\n";
+                docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "param[] " + singleArg.section(' ', -1) + "\n";
             }
 
             // And now check the return type
@@ -341,7 +373,9 @@ bool Doxygen::documentEntity(const DoxygenSettingsStruct& DoxySettings, Core::IE
                     docToWrite += indent + DoxySettings.DoxyComment.doxNewLine + "return " + arglist + "\n";
                 }
             }
-            docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+            if (!DoxySettings.DoxyComment.doxEnding.isEmpty()) {
+                docToWrite += indent + DoxySettings.DoxyComment.doxEnding;
+            }
         }
     }
 
@@ -370,8 +404,10 @@ bool Doxygen::addFileComment(const DoxygenSettingsStruct& DoxySettings, Core::IE
 
     QString text = DoxySettings.DoxyComment.doxBegin + DoxySettings.DoxyComment.doxNewLine;
     text += "file " + editor->document()->filePath().fileName() + "\n";
-    text += DoxySettings.DoxyComment.doxEmptyLine;
-    text += DoxySettings.fileComment;
+    if (!DoxySettings.fileComment.isEmpty()) {
+        text += DoxySettings.DoxyComment.doxEmptyLine;
+        text += DoxySettings.fileComment;
+    }
     text += DoxySettings.DoxyComment.doxEnding + "\n";
 
     // get our symbol

@@ -59,6 +59,7 @@ struct DoxygenSettingsStruct
     DoxygenStyle style;
     Files2Comment fcomment;
     bool printBrief;
+    bool emptyLineAfterBrief;
     bool shortVarDoc;
     bool verbosePrinting;
     bool automaticReturnType;
